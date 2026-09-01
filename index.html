@@ -460,6 +460,14 @@
     color:var(--orange);
     flex-shrink:0;
   }
+  .r-site{
+    font-family:'JetBrains Mono',monospace;
+    color:var(--grey);
+    font-size:11px;
+    width:14px;
+    text-align:center;
+    flex-shrink:0;
+  }
   .results-scroll::-webkit-scrollbar{width:8px;}
   .results-scroll::-webkit-scrollbar-track{background:var(--panel-2);}
   .results-scroll::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
@@ -1039,7 +1047,8 @@ function formatGame(g){
   const right = document.createElement('span');
   right.className = 'g-meta';
   const dateStr = g.date ? (g.date + '/' + g.season) : g.season;
-  right.innerHTML = '<span class="g-score">' + g.ts + '&ndash;' + g.os + '</span> &middot; ' + resultLabel(g) + ' &middot; ' + dateStr;
+  const siteStr = g.site ? (' &middot; ' + g.site) : '';
+  right.innerHTML = '<span class="g-score">' + g.ts + '&ndash;' + g.os + '</span> &middot; ' + resultLabel(g) + siteStr + ' &middot; ' + dateStr;
   li.appendChild(left);
   li.appendChild(right);
   return li;
@@ -1289,10 +1298,15 @@ function renderAllTimeList(){
     score.className = 'r-score';
     score.textContent = g.ts + '–' + g.os;
 
+    const site = document.createElement('span');
+    site.className = 'r-site';
+    site.textContent = g.site || '';
+
     row.appendChild(date);
     row.appendChild(badge);
     row.appendChild(opp);
     row.appendChild(score);
+    row.appendChild(site);
     frag.appendChild(row);
   });
   resultsScroll.appendChild(frag);
@@ -1527,6 +1541,15 @@ function renderOpponentHistory(){
   const losses = games.filter(g => g.res === 'L').length;
   const ties = games.filter(g => g.res === 'T').length;
 
+  function recordStr(list){
+    const w = list.filter(g => g.res === 'W').length;
+    const l = list.filter(g => g.res === 'L').length;
+    const t = list.filter(g => g.res === 'T').length;
+    return w + '-' + l + (t ? '-' + t : '');
+  }
+  const homeGames = games.filter(g => g.site === 'H');
+  const awayGames = games.filter(g => g.site === 'A');
+
   const comboCounts = new Map();
   games.forEach(g => {
     const key = g.ts + '-' + g.os;
@@ -1539,8 +1562,10 @@ function renderOpponentHistory(){
   oppRecordStrip.innerHTML = '';
   oppRecordStrip.appendChild(statBlock(wins + '-' + losses + (ties ? '-' + ties : ''), 'All-time record', true));
   oppRecordStrip.appendChild(statBlock(games.length, 'Meetings'));
+  oppRecordStrip.appendChild(statBlock(homeGames.length ? recordStr(homeGames) : '\u2014', 'Home record (' + homeGames.length + ')'));
+  oppRecordStrip.appendChild(statBlock(awayGames.length ? recordStr(awayGames) : '\u2014', 'Away record (' + awayGames.length + ')'));
   if(mostCommon){
-    oppRecordStrip.appendChild(statBlock(mostCommon[0].replace('-','–'), 'Most common score (' + mostCommon[1] + 'x)'));
+    oppRecordStrip.appendChild(statBlock(mostCommon[0].replace('-','\u2013'), 'Most common score (' + mostCommon[1] + 'x)'));
   }
 
   oppGameList.innerHTML = '';
