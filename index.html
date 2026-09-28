@@ -1436,23 +1436,29 @@ function renderTrends(){
   recordGrid.appendChild(statBlock(winPct + '%', 'Win percentage'));
 
   // streaks (ties break both)
-  let longestWin = {len:0}, longestLoss = {len:0};
-  let curWinLen = 0, curLossLen = 0, curWinStart = null, curLossStart = null;
-  GAMES.forEach(g => {
-    if(g.res === 'W'){
-      if(curWinLen === 0) curWinStart = g;
-      curWinLen++;
-      if(curWinLen > longestWin.len) longestWin = {len:curWinLen, start:curWinStart, end:g};
-      curLossLen = 0;
-    } else if(g.res === 'L'){
-      if(curLossLen === 0) curLossStart = g;
-      curLossLen++;
-      if(curLossLen > longestLoss.len) longestLoss = {len:curLossLen, start:curLossStart, end:g};
-      curWinLen = 0;
-    } else {
-      curWinLen = 0; curLossLen = 0;
-    }
-  });
+  function longestStreaks(list){
+    let lw = {len:0}, ll = {len:0};
+    let cw = 0, cl = 0, cws = null, cls = null;
+    list.forEach(g => {
+      if(g.res === 'W'){
+        if(cw === 0) cws = g;
+        cw++;
+        if(cw > lw.len) lw = {len:cw, start:cws, end:g};
+        cl = 0;
+      } else if(g.res === 'L'){
+        if(cl === 0) cls = g;
+        cl++;
+        if(cl > ll.len) ll = {len:cl, start:cls, end:g};
+        cw = 0;
+      } else {
+        cw = 0; cl = 0;
+      }
+    });
+    return {win: lw, loss: ll};
+  }
+  const allStreaks = longestStreaks(GAMES);
+  const modernStreaks = longestStreaks(GAMES.filter(g => g.season >= 1978));
+  const longestWin = allStreaks.win, longestLoss = allStreaks.loss;
 
   // current streak from most recent game backward
   let currentType = null, currentLen = 0;
@@ -1466,12 +1472,16 @@ function renderTrends(){
 
   const streakGrid = document.getElementById('streakGrid');
   streakGrid.innerHTML = '';
-  streakGrid.appendChild(statBlock(
+  const currentBlock = statBlock(
     currentLen + (currentType === 'W' ? 'W' : currentType === 'L' ? 'L' : ''),
     'Current streak', true
-  ));
+  );
+  currentBlock.style.gridColumn = '1 / -1';
+  streakGrid.appendChild(currentBlock);
   streakGrid.appendChild(statBlock(longestWin.len + 'W', 'Longest win streak' + (longestWin.end ? ' (through ' + longestWin.end.season + ')' : '')));
   streakGrid.appendChild(statBlock(longestLoss.len + 'L', 'Longest losing streak' + (longestLoss.end ? ' (through ' + longestLoss.end.season + ')' : '')));
+  streakGrid.appendChild(statBlock(modernStreaks.win.len + 'W', 'Longest win streak since 1978' + (modernStreaks.win.end ? ' (through ' + modernStreaks.win.end.season + ')' : '')));
+  streakGrid.appendChild(statBlock(modernStreaks.loss.len + 'L', 'Longest losing streak since 1978' + (modernStreaks.loss.end ? ' (through ' + modernStreaks.loss.end.season + ')' : '')));
 
   // home/away
   const home = GAMES.filter(g => g.site === 'H');
